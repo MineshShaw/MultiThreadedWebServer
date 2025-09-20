@@ -6,6 +6,8 @@ A lightweight HTTP/1.1 server written in Python that supports:
 - Concurrent request handling with a thread pool  
 - Basic security protections against path traversal and host header injection  
 
+---
+
 ## 🚀 Build and Run Instructions  
 
 ### Requirements
@@ -15,6 +17,13 @@ A lightweight HTTP/1.1 server written in Python that supports:
 ### Run the server
 ```bash
 python server.py
+```
+
+or
+
+```bash
+
+python server.py --port <port> --host <host> --max_threads <max_threads>
 ```
 ### By default, it:
 
@@ -74,5 +83,4 @@ Example:
 - No HTTPS/TLS support (plaintext only).  
 - No directory listing — files must be requested explicitly.  
 - Limited MIME type support (HTML, text, images only).  
-- Request body parsing is minimal (only JSON POST is supported).  
-- Not production-ready: designed for **learning/demo purposes** only.  
+- Request body parsing is minimal (only JSON POST is supported).

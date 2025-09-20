@@ -438,9 +438,9 @@ def parse_args():
     The parsed arguments are returned as a namespace object. For example, to access the parsed port number, use args.port.
     """
     parser = argparse.ArgumentParser(description="Multi-threaded HTTP Server")
-    parser.add_argument("port", type=int, nargs="?", default=8080)
-    parser.add_argument("host", type=str, nargs="?", default="127.0.0.1")
-    parser.add_argument("max_threads", type=int, nargs="?", default=10)
+    parser.add_argument("--port", type=int, nargs="?", default=8080)
+    parser.add_argument("--host", type=str, nargs="?", default="127.0.0.1")
+    parser.add_argument("--max_threads", type=int, nargs="?", default=10)
     return parser.parse_args()
 
 
