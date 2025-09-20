@@ -1,0 +1,10 @@
+Toyota AE86 Specifications
+---------------------------
+Engine: 1.6L inline-4 (4A-GE)
+Horsepower: 128 hp
+Torque: 110 lb-ft
+Transmission: 5-speed manual
+Drive: Rear-wheel drive
+0-60 mph: ~8.5 seconds
+Top Speed: ~118 mph
+Weight: ~950 kg (2,094 lbs)
