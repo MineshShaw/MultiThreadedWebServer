@@ -78,7 +78,7 @@ Example:
 
 ---
 
-## ⚠️ Known Limitations  
+## ⚠️ Limitations  
 
 - No HTTPS/TLS support (plaintext only).  
 - No directory listing — files must be requested explicitly.  
