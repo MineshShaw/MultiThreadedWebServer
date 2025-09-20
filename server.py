@@ -18,7 +18,7 @@ SUPPORTED_TEXT = [".txt"]
 SUPPORTED_IMAGES = [".png", ".jpg", ".jpeg"]
 
 MAX_PERSISTENT_REQUESTS = 100
-KEEP_ALIVE_TIMEOUT = 30  # seconds
+KEEP_ALIVE_TIMEOUT = 30
 
 
 # --- Utility Functions ---
@@ -40,11 +40,13 @@ def generate_id(length=4):
 
 def build_response(status, headers=None, body=b""):
     headers = headers or {}
-    lines = [f"HTTP/1.1 {status}",
-             f"Date: {datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')}",
-             "Server: Multi-threaded HTTP Server"]
+    lines = [
+        f"HTTP/1.1 {status}",
+        f"Date: {datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')}",
+        "Server: Multi-threaded HTTP Server"
+    ]
     for k, v in headers.items():
-        lines.append(f"{k}: {v}")
+        lines.insert(1, f"{k}: {v}")
     lines.append("")
     lines.append("")
     return "\r\n".join(lines).encode("utf-8") + body
@@ -62,7 +64,7 @@ def parse_request(data):
                 key, value = lines[idx].split(": ", 1)
                 headers[key.strip()] = value.strip()
             idx += 1
-        body = "\r\n".join(lines[idx+1:]) if idx + 1 < len(lines) else ""
+        body = "\r\n".join(lines[idx + 1:]) if idx + 1 < len(lines) else ""
         return method, path, version, headers, body
     except Exception:
         return None, None, None, {}, ''
@@ -74,9 +76,11 @@ def read_file(path):
         path = "index.html"
     else:
         path = path.lstrip("/")
+
     filepath = safe_path(RESOURCE_DIR, path)
     if not filepath or not os.path.isfile(filepath):
         return None, None, None, 404
+
     ext = os.path.splitext(filepath)[1].lower()
     if ext in SUPPORTED_HTML:
         return open(filepath, "rb").read(), "text/html; charset=utf-8", None, 200
@@ -101,21 +105,27 @@ def save_upload(payload):
 def handle_get(path, conn, keep_alive):
     data, ctype, disposition, status = read_file(path)
     if status in [404, 415]:
-        conn.sendall(build_response(f"{status} {'Not Found' if status==404 else 'Unsupported Media Type'}",
-                                    {"Content-Length": "0", "Connection": "close"}))
+        conn.sendall(build_response(
+            f"{status} {'Not Found' if status == 404 else 'Unsupported Media Type'}",
+            {"Content-Length": "0", "Connection": "close"}
+        ))
         return
+
     headers = {
         "Content-Type": ctype,
         "Content-Length": str(len(data)),
         "Connection": "keep-alive" if keep_alive else "close"
     }
+
     if disposition:
         headers["Content-Disposition"] = disposition
         log(f"Sending binary file: {os.path.basename(path)} ({len(data)} bytes)")
     else:
         log(f"Sending HTML file: {os.path.basename(path)} ({len(data)} bytes)")
+
     if keep_alive:
         headers["Keep-Alive"] = f"timeout={KEEP_ALIVE_TIMEOUT}, max={MAX_PERSISTENT_REQUESTS}"
+
     conn.sendall(build_response("200 OK", headers, data))
     log(f"Response: 200 OK ({len(data)} bytes transferred)")
     log(f"Connection: {'keep-alive' if keep_alive else 'close'}")
@@ -123,31 +133,42 @@ def handle_get(path, conn, keep_alive):
 
 def handle_post(headers, body, conn, keep_alive):
     if headers.get("Content-Type", "").lower() != "application/json":
-        conn.sendall(build_response("415 Unsupported Media Type",
-                                    {"Content-Length": "0", "Connection": "close"}))
+        conn.sendall(build_response(
+            "415 Unsupported Media Type",
+            {"Content-Length": "0", "Connection": "close"}
+        ))
         return
+
     try:
         payload = json.loads(body)
     except Exception:
         conn.sendall(build_response("400 Bad Request", {"Content-Length": "0", "Connection": "close"}))
         return
+
     try:
         relpath = save_upload(payload)
     except Exception:
-        conn.sendall(build_response("500 Internal Server Error", {"Content-Length": "0", "Connection": "close"}))
+        conn.sendall(build_response(
+            "500 Internal Server Error",
+            {"Content-Length": "0", "Connection": "close"}
+        ))
         return
+
     response_body = json.dumps({
         "status": "success",
         "message": "File created successfully",
         "filepath": relpath
     }).encode("utf-8")
+
     resp_headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Content-Length": str(len(response_body)),
         "Connection": "keep-alive" if keep_alive else "close"
     }
+
     if keep_alive:
         resp_headers["Keep-Alive"] = f"timeout={KEEP_ALIVE_TIMEOUT}, max={MAX_PERSISTENT_REQUESTS}"
+
     conn.sendall(build_response("201 Created", resp_headers, response_body))
     log(f"Response: 201 Created ({len(response_body)} bytes transferred)")
 
@@ -161,6 +182,7 @@ def serve_client(conn, addr, server_host, server_port):
     log(f"Connection from {addr}")
     persistent_count = 0
     conn.settimeout(KEEP_ALIVE_TIMEOUT)
+
     while persistent_count < MAX_PERSISTENT_REQUESTS:
         try:
             data = conn.recv(8192)
@@ -168,11 +190,14 @@ def serve_client(conn, addr, server_host, server_port):
             break
         if not data:
             break
+
         method, path, version, headers, body = parse_request(data)
         log(f"Received: {method} {path} {version}")
+
         if not method:
             conn.sendall(build_response("400 Bad Request", {"Content-Length": "0"}))
             break
+
         host_header = headers.get("Host", "")
         if not validate_host(host_header, server_host, server_port):
             log(f"Host validation failed: {host_header}")
@@ -180,6 +205,7 @@ def serve_client(conn, addr, server_host, server_port):
             break
         else:
             log(f"Host validation: {host_header}")
+
         keep_alive = headers.get("Connection", "").lower() == "keep-alive" or version == "HTTP/1.1"
         if method == "GET":
             handle_get(path, conn, keep_alive)
@@ -188,9 +214,11 @@ def serve_client(conn, addr, server_host, server_port):
         else:
             conn.sendall(build_response("405 Method Not Allowed", {"Content-Length": "0"}))
             break
+
         persistent_count += 1
         if not keep_alive:
             break
+
     conn.close()
 
 
@@ -209,11 +237,37 @@ def run_server(host, port, max_threads):
     print()
 
     pool = ThreadPoolExecutor(max_workers=max_threads)
+    connection_queue = []
+    active_tasks = 0
+    lock = threading.Lock()
+
+    def client_wrapper(conn, addr):
+        nonlocal active_tasks
+        with lock:
+            active_tasks += 1
+            print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Thread pool status: {active_tasks}/{max_threads} active")
+        try:
+            serve_client(conn, addr, host, port)
+        finally:
+            with lock:
+                active_tasks -= 1
+                print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Thread pool status: {active_tasks}/{max_threads} active")
+                # Serve queued connections if any
+                if connection_queue:
+                    queued_conn, queued_addr = connection_queue.pop(0)
+                    print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Connection dequeued, assigned to Thread-{threading.current_thread().name[-1]}")
+                    pool.submit(client_wrapper, queued_conn, queued_addr)
+
     try:
         while True:
             try:
                 conn, addr = server.accept()
-                pool.submit(serve_client, conn, addr, host, port)
+                with lock:
+                    if active_tasks >= max_threads:
+                        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Warning: Thread pool saturated, queuing connection")
+                        connection_queue.append((conn, addr))
+                        continue
+                pool.submit(client_wrapper, conn, addr)
             except socket.timeout:
                 continue
     except KeyboardInterrupt:
@@ -221,7 +275,6 @@ def run_server(host, port, max_threads):
     finally:
         server.close()
         pool.shutdown(wait=True)
-        print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Server shut down.")
 
 
 def parse_args():
