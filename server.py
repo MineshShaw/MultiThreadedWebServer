@@ -23,21 +23,16 @@ KEEP_ALIVE_TIMEOUT = 30
 # --- Utility Functions ---
 def safe_path(base, path):
     """
-    Ensure that a path is within a given base directory.
-
-    Given a base directory and a path, this function
-    will return a path that is within the base directory. If the
-    resulting path is not within the base directory, this function
-    will return None.
+    Checks if a given path is within a base directory and returns the absolute path if it is.
+    If the path is not within the base directory, returns None.
 
     Args:
-        base (str): The base directory.
-        *parts (str): The path parts to join with the base directory.
+        base (str): The base directory to check against.
+        path (str): The path to check.
 
     Returns:
-        str or None: The resulting path if it is within the base directory,
-        otherwise None.
-    """
+        str: The absolute path if the path is within the base directory, otherwise None.
+    """    
     base = os.path.abspath(base)
     final = os.path.abspath(os.path.join(base, path))
     return final if final.startswith(base) else None
